@@ -10,11 +10,24 @@ export const DEFAULT_FIELDS = [
   { key: 'comentarios', label: 'Comentarios, notas, ideas', type: 'textarea', required: false, placeholder: 'Cualquier otra observación...', hint: 'Opcional', category: 'standard' }
 ]
 
+const ENV_DEFAULTS = {
+  token:    import.meta.env.VITE_GITHUB_TOKEN    || '',
+  owner:    import.meta.env.VITE_GITHUB_OWNER    || '',
+  repo:     import.meta.env.VITE_GITHUB_REPO     || '',
+  branch:   import.meta.env.VITE_GITHUB_BRANCH   || 'main',
+  filepath: import.meta.env.VITE_GITHUB_FILEPATH || 'data/submissions.json',
+}
+
 function getConfig() {
   try {
-    return JSON.parse(localStorage.getItem('giros_github_config') || '{}')
+    const stored = JSON.parse(localStorage.getItem('giros_github_config') || '{}')
+    // Merge: stored values override env defaults
+    return {
+      ...ENV_DEFAULTS,
+      ...Object.fromEntries(Object.entries(stored).filter(([, v]) => v)),
+    }
   } catch {
-    return {}
+    return ENV_DEFAULTS
   }
 }
 
