@@ -60,12 +60,12 @@ export default function SharedView({ id, setPage }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 12 }}>Configuración Requerida</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 12 }}>No se pudo conectar</h3>
             <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-              Para visualizar este aprendizaje, necesitás configurar las credenciales de GitHub de tu equipo en este navegador.
+              No se pudo establecer conexión con la base de datos para cargar este aprendizaje.
             </p>
-            <button className="btn btn-primary" onClick={() => handleGoTo('settings')}>
-              Ir a Configuración
+            <button className="btn btn-ghost" onClick={() => handleGoTo('dashboard')}>
+              Ir al listado general
             </button>
           </div>
         </div>

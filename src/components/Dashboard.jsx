@@ -16,7 +16,7 @@ function DetailModal({ submission, formFields = [], onClose, onDelete }) {
   const [copied, setCopied] = useState(false)
 
   async function handleDelete() {
-    if (!confirm('¿Eliminar este registro de GitHub?')) return
+    if (!confirm('¿Eliminar este registro?')) return
     setDeleting(true)
     try {
       await deleteSubmission(submission.id)
@@ -133,7 +133,7 @@ export default function Dashboard({ setPage }) {
 
   function handleShareForm() {
     if (!configured) {
-      showToast('Configurá GitHub en Configuración antes de compartir el formulario', 'error')
+      showToast('No se pudo conectar con la base de datos', 'error')
       return
     }
     const url = getShareableLink('form')
@@ -239,14 +239,6 @@ export default function Dashboard({ setPage }) {
           </div>
         )}
 
-        {!configured && (
-          <div className="config-banner" onClick={() => setPage('settings')}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 18, height: 18, flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
-            GitHub no está configurado. Ir a Configuración →
-          </div>
-        )}
 
         {error && <div className="alert alert-error">{error}</div>}
 

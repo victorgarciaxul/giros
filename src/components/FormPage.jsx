@@ -138,7 +138,7 @@ export default function FormPage({ setPage, isPublic = false }) {
   async function handleSave(status = 'sent') {
     if (!validate()) return
     if (!configured) {
-      showToast('Configurá GitHub antes de guardar o enviar', 'error')
+      showToast('Error de conexión con la base de datos', 'error')
       return
     }
     setSaving(true)
@@ -158,7 +158,7 @@ export default function FormPage({ setPage, isPublic = false }) {
         setShowSuccess(true)
         localStorage.removeItem(DRAFT_KEY)
       } else {
-        showToast('Borrador guardado en GitHub con éxito', 'success')
+        showToast('Borrador guardado correctamente', 'success')
       }
     } catch (e) {
       showToast('Error al procesar: ' + e.message, 'error')
@@ -239,7 +239,7 @@ export default function FormPage({ setPage, isPublic = false }) {
               </div>
               <h3 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-heading)', marginBottom: 12 }}>¡Aprendizaje enviado al equipo!</h3>
               <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28, fontSize: 14.5 }}>
-                Tu aprendizaje se ha registrado en GitHub con estado <strong>Enviado</strong>. Compartilo con tus compañeros de equipo a través de este enlace directo:
+                Tu aprendizaje ha sido registrado con estado <strong>Enviado</strong>. Compartilo con tus compañeros de equipo a través de este enlace directo:
               </p>
               
               <div style={{ display: 'flex', gap: 10, marginBottom: 32 }}>
@@ -318,14 +318,6 @@ export default function FormPage({ setPage, isPublic = false }) {
           </div>
         </div>
 
-        {!configured && (
-          <div className="config-banner" onClick={() => setPage('settings')}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 18, height: 18, flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-            </svg>
-            GitHub no está configurado. Los registros no se podrán guardar. Ir a Configuración &rarr;
-          </div>
-        )}
 
         {toast && (
           <div className={`alert alert-${toast.type}`}>

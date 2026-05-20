@@ -5,6 +5,9 @@
 }
 
 :root {
+  /* XUL Brand */
+  --xul-red: #c0312b;
+
   /* Premium Colors */
   --primary: #0db9a8;       /* Teal - represents growth, learning */
   --primary-rgb: 13, 185, 168;
@@ -33,7 +36,7 @@
   /* Sidebar (Elegant Deep Slate Dark) */
   --sidebar-bg: #0c1322;
   --sidebar-hover: rgba(255, 255, 255, 0.04);
-  --sidebar-active: rgba(13, 185, 168, 0.12);
+  --sidebar-active: rgba(192, 49, 43, 0.12);
   --sidebar-text: #64748b;
   --sidebar-text-active: #f8fafc;
   --sidebar-width: 260px;
@@ -103,7 +106,7 @@ h1, h2, h3, h4, .sidebar-logo h1 {
   left: 24px;
   right: 24px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(13, 185, 168, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(192, 49, 43, 0.3), transparent);
 }
 
 .sidebar-logo h1 {
@@ -118,7 +121,7 @@ h1, h2, h3, h4, .sidebar-logo h1 {
 }
 
 .sidebar-logo h1 span {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, var(--xul-red) 0%, #e05a55 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -177,9 +180,9 @@ h1, h2, h3, h4, .sidebar-logo h1 {
   top: 15%;
   height: 70%;
   width: 4px;
-  background: var(--primary);
+  background: var(--xul-red);
   border-radius: 0 4px 4px 0;
-  box-shadow: 0 0 10px var(--primary);
+  box-shadow: 0 0 10px var(--xul-red);
 }
 
 .nav-item svg {
@@ -1000,27 +1003,27 @@ tr:last-child td {
   top: 50%;
   left: 50%;
   border-radius: 50%;
-  border: 1px solid rgba(13, 185, 168, 0.18);
+  border: 1px solid rgba(192, 49, 43, 0.18);
   transform: translate(-50%, -50%);
 }
 
 .ring-1 {
   width: 560px; height: 560px;
   animation: ring-spin 28s linear infinite;
-  border-color: rgba(13, 185, 168, 0.22);
+  border-color: rgba(192, 49, 43, 0.22);
   border-style: dashed;
 }
 
 .ring-2 {
   width: 760px; height: 760px;
   animation: ring-spin 45s linear infinite reverse;
-  border-color: rgba(99, 102, 241, 0.14);
+  border-color: rgba(192, 49, 43, 0.10);
 }
 
 .ring-3 {
   width: 980px; height: 980px;
   animation: ring-spin 70s linear infinite;
-  border-color: rgba(13, 185, 168, 0.07);
+  border-color: rgba(192, 49, 43, 0.05);
 }
 
 @keyframes ring-spin {
@@ -1036,10 +1039,10 @@ tr:last-child td {
   transform: translate(-50%, -50%);
   border-radius: 50%;
   border: 2px solid transparent;
-  border-top-color: rgba(13, 185, 168, 0.3);
-  border-right-color: rgba(13, 185, 168, 0.1);
+  border-top-color: rgba(192, 49, 43, 0.35);
+  border-right-color: rgba(192, 49, 43, 0.12);
   animation: ring-spin 12s linear infinite;
-  box-shadow: 0 0 60px rgba(13, 185, 168, 0.06) inset;
+  box-shadow: 0 0 60px rgba(192, 49, 43, 0.06) inset;
 }
 
 /* Center glow */
@@ -1049,7 +1052,7 @@ tr:last-child td {
   width: 320px; height: 320px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(13, 185, 168, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(192, 49, 43, 0.1) 0%, transparent 70%);
   animation: pulse-glow 4s ease-in-out infinite;
 }
 
@@ -1064,7 +1067,7 @@ tr:last-child td {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: rgba(13, 185, 168, 0.45);
+  color: rgba(192, 49, 43, 0.5);
   text-transform: uppercase;
   white-space: nowrap;
   animation: word-float linear infinite;
@@ -1084,7 +1087,7 @@ tr:last-child td {
   z-index: 10;
   background: rgba(20, 28, 43, 0.88);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(13, 185, 168, 0.2);
+  border: 1px solid rgba(192, 49, 43, 0.25);
   border-radius: 20px;
   padding: 44px 40px 32px;
   width: 100%;
@@ -1116,12 +1119,12 @@ tr:last-child td {
 .login-icon {
   width: 64px; height: 64px;
   border-radius: 16px;
-  background: linear-gradient(135deg, #0d9488 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #c0312b 0%, #e05a55 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(13, 185, 168, 0.4);
+  box-shadow: 0 8px 24px rgba(192, 49, 43, 0.4);
 }
 
 .login-icon svg { width: 36px; height: 36px; }
@@ -1139,7 +1142,7 @@ tr:last-child td {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: rgba(13, 185, 168, 0.8);
+  color: rgba(192, 49, 43, 0.85);
   text-transform: uppercase;
   margin-bottom: 12px;
 }
@@ -1181,8 +1184,8 @@ tr:last-child td {
 .login-field input::placeholder { color: #475569; }
 
 .login-field input:focus {
-  border-color: rgba(13, 185, 168, 0.6);
-  box-shadow: 0 0 0 3px rgba(13, 185, 168, 0.12);
+  border-color: rgba(192, 49, 43, 0.6);
+  box-shadow: 0 0 0 3px rgba(192, 49, 43, 0.12);
 }
 
 /* Error */
@@ -1205,7 +1208,7 @@ tr:last-child td {
   margin-top: 4px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #0d9488 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #c0312b 0%, #e05a55 100%);
   color: #fff;
   font-size: 14.5px;
   font-weight: 700;
@@ -1215,13 +1218,13 @@ tr:last-child td {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(13, 185, 168, 0.35);
+  box-shadow: 0 4px 20px rgba(192, 49, 43, 0.35);
 }
 
 .login-btn:hover:not(:disabled) {
   opacity: 0.92;
   transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(13, 185, 168, 0.45);
+  box-shadow: 0 8px 28px rgba(192, 49, 43, 0.45);
 }
 
 .login-btn:active:not(:disabled) { transform: scale(0.98); }
