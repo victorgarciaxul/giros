@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from './components/Layout'
 import FormPage from './components/FormPage'
 import Dashboard from './components/Dashboard'
@@ -38,25 +38,6 @@ export default function App() {
     setUser(null)
   }
 
-  // Load GitHub config embedded in shared URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const o = params.get('o'), r = params.get('r'), t = params.get('t')
-    if (o && r && t) {
-      try {
-        const config = {
-          owner: o,
-          repo: r,
-          branch: params.get('b') || 'main',
-          filepath: params.get('p') || 'data/submissions.json',
-          token: atob(t),
-        }
-        localStorage.setItem('giros_github_config', JSON.stringify(config))
-      } catch (e) {
-        console.error('Error loading config from URL:', e)
-      }
-    }
-  }, [])
 
   if (!user && !isPublicForm) {
     return <LoginPage onLogin={handleLogin} />
