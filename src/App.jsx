@@ -39,8 +39,27 @@ export default function App() {
   }
 
 
-  if (!user && !isPublicForm) {
+  if (!user && !isPublicForm && !sharedId) {
     return <LoginPage onLogin={handleLogin} />
+  }
+
+  if (!user && sharedId) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100vh', width: '100%' }}>
+        <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #c0312b 0%, #e05a55 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+            </svg>
+          </div>
+          <div>
+            <span style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: 15 }}>GIROS</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>Cosecha de aprendizajes · XUL</span>
+          </div>
+        </div>
+        <SharedView id={sharedId} setPage={setPage} />
+      </div>
+    )
   }
 
   if (isPublicForm) {

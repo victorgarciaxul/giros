@@ -3,9 +3,9 @@ import { loadSubmissions, deleteSubmission, isConfigured, getShareableLink, load
 
 function Badge({ status }) {
   const map = {
-    draft: { label: 'Borrador', cls: 'badge-draft' },
-    saved: { label: 'Guardado', cls: 'badge-saved' },
-    sent:  { label: 'Enviado',  cls: 'badge-sent'  },
+    draft: { label: 'Pendiente', cls: 'badge-draft' },
+    saved: { label: 'Guardado',  cls: 'badge-saved' },
+    sent:  { label: 'Enviado',   cls: 'badge-sent'  },
   }
   const { label, cls } = map[status] || map.saved
   return <span className={`badge ${cls}`}>{label}</span>
@@ -50,9 +50,7 @@ function DetailModal({ submission, formFields = [], onClose, onDelete }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
             <Badge status={submission.status} />
             <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
-              Creado el: {submission.createdAt
-                ? new Date(submission.createdAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                : '—'}
+              {new Date(submission.createdAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
           {formFields.map(f => (
@@ -65,35 +63,14 @@ function DetailModal({ submission, formFields = [], onClose, onDelete }) {
           ))}
         </div>
         <div className="modal-footer">
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={handleCopyLink}
-            style={{ marginRight: 'auto', gap: 6 }}
-          >
+          <button className="btn btn-ghost btn-sm" onClick={handleCopyLink} style={{ marginRight: 'auto', gap: 6 }}>
             {copied ? (
-              <>
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14, color: 'var(--success)' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                ¡Enlace copiado!
-              </>
+              <><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14, color: 'var(--success)' }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>¡Enlace copiado!</>
             ) : (
-              <>
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l-1.922-.641m0 0a3 3 0 10-2.28 4.302m0-4.302a3 3 0 002.28-4.302m1.922 6.224l1.922.641m0 0a3 3 0 102.28-4.302m-2.28 4.302a3 3 0 00-2.28 4.302" />
-                </svg>
-                Compartir enlace
-              </>
+              <><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l-1.922-.641m0 0a3 3 0 10-2.28 4.302m0-4.302a3 3 0 002.28-4.302m1.922 6.224l1.922.641m0 0a3 3 0 102.28-4.302m-2.28 4.302a3 3 0 00-2.28 4.302" /></svg>Compartir enlace</>
             )}
           </button>
-          
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
-            {deleting ? 'Eliminando...' : 'Eliminar'}
-          </button>
+          <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>{deleting ? 'Eliminando...' : 'Eliminar'}</button>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>Cerrar</button>
         </div>
       </div>
@@ -102,7 +79,6 @@ function DetailModal({ submission, formFields = [], onClose, onDelete }) {
 }
 
 function exportCSV(list, formFields) {
-  // Use keys from formFields dynamic list
   const cols = ['id', 'createdAt', 'status', ...formFields.map(f => f.key)]
   const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
   const rows = [cols.join(','), ...list.map(r => cols.map(c => esc(r[c])).join(','))]
@@ -121,35 +97,17 @@ export default function Dashboard({ setPage }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
   const [selected, setSelected] = useState(null)
-  const [toast, setToast] = useState(null)
+  const [tab, setTab] = useState('recibidos')
+  const [copiedId, setCopiedId] = useState(null)
   const configured = isConfigured()
-
-  function showToast(msg, type = 'success') {
-    setToast({ msg, type })
-    setTimeout(() => setToast(null), 4000)
-  }
-
-  function handleShareForm() {
-    if (!configured) {
-      showToast('No se pudo conectar con la base de datos', 'error')
-      return
-    }
-    const url = getShareableLink('form')
-    navigator.clipboard.writeText(url)
-    showToast('Enlace de formulario copiado al portapapeles', 'success')
-  }
 
   const load = useCallback(async () => {
     if (!configured) return
     setLoading(true)
     setError(null)
     try {
-      const [submissionsData, fieldsData] = await Promise.all([
-        loadSubmissions(),
-        loadFormConfig()
-      ])
+      const [submissionsData, fieldsData] = await Promise.all([loadSubmissions(), loadFormConfig()])
       setSubmissions(submissionsData)
       setFormFields(fieldsData)
     } catch (e) {
@@ -161,22 +119,34 @@ export default function Dashboard({ setPage }) {
 
   useEffect(() => { load() }, [load])
 
-  const filtered = submissions.filter(s => {
-    const q = search.toLowerCase()
-    const matchSearch = !q || Object.values(s).some(v => String(v || '').toLowerCase().includes(q))
-    const matchStatus = filterStatus === 'all' || s.status === filterStatus
-    return matchSearch && matchStatus
-  })
-
-  const counts = {
-    total: submissions.length,
-    saved: submissions.filter(s => s.status === 'saved').length,
-    sent: submissions.filter(s => s.status === 'sent').length,
-  }
-
   function handleDelete(id) {
     setSubmissions(prev => prev.filter(s => s.id !== id))
   }
+
+  async function handleDeleteDraft(id) {
+    if (!confirm('¿Eliminar este formulario creado?')) return
+    try {
+      await deleteSubmission(id)
+      setSubmissions(prev => prev.filter(s => s.id !== id))
+    } catch (e) {
+      alert('Error al eliminar: ' + e.message)
+    }
+  }
+
+  function handleCopyDraftLink(id) {
+    const url = getShareableLink('submission', id)
+    navigator.clipboard.writeText(url)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const drafts = submissions.filter(s => s.status === 'draft')
+  const received = submissions.filter(s => s.status !== 'draft')
+
+  const q = search.toLowerCase()
+  const filteredReceived = received.filter(s =>
+    !q || Object.values(s).some(v => String(v || '').toLowerCase().includes(q))
+  )
 
   const nameField = formFields.find(f => f.key === 'nombre') || { key: 'nombre', label: 'Nombre' }
   const projectField = formFields.find(f => f.key === 'proyecto') || { key: 'proyecto', label: 'Proyecto' }
@@ -186,17 +156,10 @@ export default function Dashboard({ setPage }) {
     <>
       <div className="page-header">
         <div>
-          <h2>Registros</h2>
-          <p>Historial de cosechas guardadas</p>
+          <h2>Dashboard</h2>
+          <p>Formularios creados y respuestas recibidas</p>
         </div>
         <div className="btn-row" style={{ margin: 0 }}>
-          <button className="btn btn-ghost btn-sm" onClick={handleShareForm} style={{ gap: 6 }}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l-1.922-.641m0 0a3 3 0 10-2.28 4.302m0-4.302a3 3 0 002.28-4.302m1.922 6.224l1.922.641m0 0a3 3 0 102.28-4.302m-2.28 4.302a3 3 0 00-2.28 4.302" />
-            </svg>
-            Compartir Formulario
-          </button>
-
           <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading || !configured}>
             {loading ? <span className="spinner spinner-dark" /> : (
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 15, height: 15 }}>
@@ -205,118 +168,156 @@ export default function Dashboard({ setPage }) {
             )}
             Actualizar
           </button>
-          {submissions.length > 0 && (
-            <button className="btn btn-ghost btn-sm" onClick={() => exportCSV(filtered, formFields)}>
+          {received.length > 0 && (
+            <button className="btn btn-ghost btn-sm" onClick={() => exportCSV(filteredReceived, formFields)}>
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 15, height: 15 }}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               Exportar CSV
             </button>
           )}
-
-          <button className="btn btn-primary btn-sm" onClick={() => window.open(getShareableLink('form'), '_blank')} style={{ gap: 6 }} disabled={!configured}>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2} style={{ width: 14, height: 14 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Abrir Formulario ↗
-          </button>
         </div>
       </div>
 
       <div className="page-content">
-        {toast && (
-          <div className={`alert alert-${toast.type}`} style={{ marginBottom: 20 }}>
-            {toast.type === 'success' ? (
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 20, height: 20, flexShrink: 0 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ) : (
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 20, height: 20, flexShrink: 0 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-            {toast.msg}
-          </div>
-        )}
-
-
         {error && <div className="alert alert-error">{error}</div>}
 
+        {/* Stats */}
         <div className="stats-row">
           <div className="stat-card stat-total">
-            <div className="stat-label">Total cosechados</div>
-            <div className="stat-value">{counts.total}</div>
+            <div className="stat-label">Total</div>
+            <div className="stat-value">{submissions.length}</div>
           </div>
           <div className="stat-card stat-saved">
-            <div className="stat-label">Guardados</div>
-            <div className="stat-value" style={{ color: 'var(--primary)' }}>{counts.saved}</div>
+            <div className="stat-label">Creados</div>
+            <div className="stat-value" style={{ color: 'var(--text-muted)' }}>{drafts.length}</div>
           </div>
           <div className="stat-card stat-sent">
-            <div className="stat-label">Enviados</div>
-            <div className="stat-value" style={{ color: 'var(--success)' }}>{counts.sent}</div>
+            <div className="stat-label">Recibidos</div>
+            <div className="stat-value" style={{ color: 'var(--success)' }}>{received.length}</div>
           </div>
         </div>
 
-        <div className="filters-row">
-          <input
-            className="search-input"
-            placeholder="🔍 Buscar por nombre, proyecto, correo o contexto..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-          >
-            <option value="all">Todos los estados</option>
-            <option value="saved">Guardados</option>
-            <option value="sent">Enviados</option>
-            <option value="draft">Borradores</option>
-          </select>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 28, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+          {[
+            { id: 'recibidos', label: `Recibidos (${received.length})` },
+            { id: 'creados',   label: `Creados (${drafts.length})` },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '10px 20px', fontSize: 14, fontWeight: 600,
+                color: tab === t.id ? 'var(--text-heading)' : 'var(--text-muted)',
+                borderBottom: tab === t.id ? '2px solid var(--xul-red)' : '2px solid transparent',
+                marginBottom: -1, transition: 'color .15s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60 }}>
             <span className="spinner spinner-dark" style={{ width: 28, height: 28, borderWidth: 3 }} />
-            <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>Cargando registros...</p>
+            <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>Cargando...</p>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <h3>{search || filterStatus !== 'all' ? 'Sin resultados' : 'No hay registros aún'}</h3>
-            <p>{search || filterStatus !== 'all' ? 'Probá con otros filtros' : 'Completá el formulario para guardar el primer registro'}</p>
-          </div>
+        ) : tab === 'recibidos' ? (
+          <>
+            <div className="filters-row">
+              <input
+                className="search-input"
+                placeholder="🔍 Buscar por nombre, proyecto, correo..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+
+            {filteredReceived.length === 0 ? (
+              <div className="empty-state">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <h3>{search ? 'Sin resultados' : 'No hay respuestas aún'}</h3>
+                <p>{search ? 'Probá con otros términos' : 'Cuando alguien rellene y envíe un formulario aparecerá aquí'}</p>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{nameField.label}</th>
+                      <th>{projectField.label}</th>
+                      <th>{contactField.label}</th>
+                      <th>Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredReceived.map(s => (
+                      <tr key={s.id} onClick={() => setSelected(s)}>
+                        <td style={{ fontWeight: 500 }}>{s[nameField.key] || '—'}</td>
+                        <td className="td-truncate">{s[projectField.key] || '—'}</td>
+                        <td className="td-truncate" style={{ color: 'var(--text-muted)' }}>{s[contactField.key] || '—'}</td>
+                        <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {s.createdAt ? new Date(s.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>{nameField.label}</th>
-                  <th>{projectField.label}</th>
-                  <th>{contactField.label}</th>
-                  <th>Fecha</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(s => (
-                  <tr key={s.id} onClick={() => setSelected(s)}>
-                    <td style={{ fontWeight: 500 }}>{s[nameField.key] || '—'}</td>
-                    <td className="td-truncate">{s[projectField.key] || '—'}</td>
-                    <td className="td-truncate" style={{ color: 'var(--text-muted)' }}>{s[contactField.key] || '—'}</td>
-                    <td style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                      {s.createdAt
-                        ? new Date(s.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                        : '—'}
-                    </td>
-                    <td><Badge status={s.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          /* Creados tab */
+          drafts.length === 0 ? (
+            <div className="empty-state">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3>No hay formularios creados</h3>
+              <p>Creá un formulario desde la sección <strong>Formularios</strong> y compartí el enlace</p>
+              <button className="btn btn-primary" onClick={() => setPage('editor')} style={{ marginTop: 20 }}>
+                Ir a Formularios
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {drafts.map(d => (
+                <div key={d.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-heading)', marginBottom: 3 }}>
+                      Formulario pendiente de rellenar
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Creado el {new Date(d.createdAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => handleCopyDraftLink(d.id)}
+                      style={{ gap: 6 }}
+                    >
+                      {copiedId === d.id ? (
+                        <><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ width: 13, height: 13 }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>¡Copiado!</>
+                      ) : 'Copiar enlace'}
+                    </button>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => handleDeleteDraft(d.id)}
+                      style={{ color: 'var(--danger)' }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 

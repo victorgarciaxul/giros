@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
-import { loadFormConfig, saveFormConfig, isConfigured, getShareableLink } from '../lib/github'
+import { loadFormConfig, saveFormConfig, isConfigured, getShareableLink, saveSubmission } from '../lib/github'
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+}
 
 export default function FormEditor({ setPage }) {
   const [formFields, setFormFields] = useState([])
@@ -7,15 +11,10 @@ export default function FormEditor({ setPage }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
-  const [copied, setCopied] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [newLink, setNewLink] = useState(null)
+  const [copiedNew, setCopiedNew] = useState(false)
   const configured = isConfigured()
-
-  function handleCopyLink() {
-    const url = getShareableLink('form')
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
-  }
 
   useEffect(() => {
     async function loadFields() {
@@ -32,6 +31,26 @@ export default function FormEditor({ setPage }) {
     loadFields()
   }, [])
 
+  async function handleCreateForm() {
+    setCreating(true)
+    setNewLink(null)
+    try {
+      const id = genId()
+      await saveSubmission({ id, createdAt: new Date().toISOString(), status: 'draft' })
+      setNewLink(getShareableLink('submission', id))
+    } catch (e) {
+      setError('Error al crear el formulario: ' + e.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  function handleCopyNew() {
+    navigator.clipboard.writeText(newLink)
+    setCopiedNew(true)
+    setTimeout(() => setCopiedNew(false), 2500)
+  }
+
   function handleFieldChange(index, key, value) {
     const updated = [...formFields]
     updated[index] = { ...updated[index], [key]: value }
@@ -43,15 +62,7 @@ export default function FormEditor({ setPage }) {
     const newKey = 'campo_' + Math.random().toString(36).slice(2, 7)
     setFormFields(prev => [
       ...prev,
-      {
-        key: newKey,
-        label: 'Nueva pregunta',
-        type: 'textarea',
-        required: false,
-        placeholder: '',
-        hint: '',
-        category: 'standard'
-      }
+      { key: newKey, label: 'Nueva pregunta', type: 'textarea', required: false, placeholder: '', hint: '', category: 'standard' }
     ])
     setSaved(false)
   }
@@ -79,10 +90,7 @@ export default function FormEditor({ setPage }) {
   }
 
   async function handleSave() {
-    if (!configured) {
-      setError('Error de conexión con la base de datos.')
-      return
-    }
+    if (!configured) { setError('Error de conexión con la base de datos.'); return }
     setSaving(true)
     setError(null)
     try {
@@ -101,9 +109,17 @@ export default function FormEditor({ setPage }) {
       <div className="page-header">
         <div>
           <h2>Formularios</h2>
-          <p>Compartí el enlace para que te lo rellenen, o editá las preguntas</p>
+          <p>Creá un formulario y compartí el enlace para que te lo rellenen</p>
         </div>
         <div className="btn-row" style={{ margin: 0 }}>
+          <button className="btn btn-primary btn-sm" onClick={handleCreateForm} disabled={creating || loading} style={{ gap: 6 }}>
+            {creating ? <span className="spinner" /> : (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            )}
+            Crear formulario
+          </button>
           <button className="btn btn-ghost btn-sm" onClick={handleAddField} disabled={loading} style={{ gap: 6 }}>
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -115,29 +131,39 @@ export default function FormEditor({ setPage }) {
 
       <div className="page-content" style={{ maxWidth: 800 }}>
 
-        {/* Share link card */}
-        <div className="card" style={{ marginBottom: 32, borderLeft: '4px solid var(--xul-red)' }}>
-          <div className="card-body" style={{ padding: '24px 28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-              <div>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 4 }}>Enlace del formulario</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Compartí este enlace para que las personas lo rellenen y envíen</p>
+        {newLink && (
+          <div className="card" style={{ marginBottom: 28, borderLeft: '4px solid var(--xul-red)' }}>
+            <div className="card-body" style={{ padding: '20px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                <div>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 3 }}>
+                    ¡Formulario creado! Compartí el enlace
+                  </h4>
+                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                    El destinatario lo rellena y envía. Aparecerá en <strong>Recibidos</strong> del Dashboard.
+                  </p>
+                </div>
+                <button onClick={() => setNewLink(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1, flexShrink: 0 }}>✕</button>
               </div>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => window.open(getShareableLink('form'), '_blank')}
-                style={{ gap: 6, flexShrink: 0 }}
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Compartir formulario
-              </button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={newLink}
+                  onClick={e => e.target.select()}
+                  style={{ flex: 1, minWidth: 200, background: 'var(--bg)', fontFamily: 'monospace', fontSize: 12, cursor: 'text' }}
+                />
+                <button className="btn btn-primary btn-sm" onClick={handleCopyNew} style={{ gap: 6, flexShrink: 0 }}>
+                  {copiedNew ? (
+                    <><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ width: 13, height: 13 }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>¡Copiado!</>
+                  ) : 'Copiar enlace'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 20 }}>Preguntas del formulario</h3>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 20 }}>Preguntas del formulario</h3>
 
         {saved && <div className="alert alert-success">Formulario guardado con éxito</div>}
         {error && <div className="alert alert-error">{error}</div>}
@@ -152,49 +178,16 @@ export default function FormEditor({ setPage }) {
             {formFields.map((field, index) => {
               const isProtected = ['correo', 'nombre', 'proyecto'].includes(field.key)
               return (
-                <div
-                  key={field.key}
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1.5px solid var(--border)',
-                    borderRadius: 'var(--radius)',
-                    padding: 20,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 16,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                  }}
-                >
+                <div key={field.key} style={{ background: 'var(--surface)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Pregunta #{index + 1} {isProtected ? ' (Requerida por el sistema)' : ''}
+                      Pregunta #{index + 1}{isProtected ? ' (Requerida)' : ''}
                     </span>
-                    
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleMove(index, -1)}
-                        disabled={index === 0}
-                        style={{ padding: '4px 8px', minWidth: 'auto' }}
-                      >
-                        &uarr;
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleMove(index, 1)}
-                        disabled={index === formFields.length - 1}
-                        style={{ padding: '4px 8px', minWidth: 'auto' }}
-                      >
-                        &darr;
-                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleMove(index, -1)} disabled={index === 0} style={{ padding: '4px 8px', minWidth: 'auto' }}>&uarr;</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => handleMove(index, 1)} disabled={index === formFields.length - 1} style={{ padding: '4px 8px', minWidth: 'auto' }}>&darr;</button>
                       {!isProtected && (
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => handleRemoveField(index)}
-                          style={{ padding: '4px 8px', minWidth: 'auto', color: 'var(--danger)' }}
-                        >
-                          Eliminar
-                        </button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => handleRemoveField(index)} style={{ padding: '4px 8px', minWidth: 'auto', color: 'var(--danger)' }}>Eliminar</button>
                       )}
                     </div>
                   </div>
@@ -202,34 +195,19 @@ export default function FormEditor({ setPage }) {
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontSize: 12 }}>Título / Pregunta</label>
-                      <input
-                        type="text"
-                        value={field.label}
-                        onChange={e => handleFieldChange(index, 'label', e.target.value)}
-                        placeholder="Escribe la pregunta..."
-                      />
+                      <input type="text" value={field.label} onChange={e => handleFieldChange(index, 'label', e.target.value)} placeholder="Escribe la pregunta..." />
                     </div>
-
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontSize: 12 }}>Tipo de respuesta</label>
-                      <select
-                        value={field.type}
-                        onChange={e => handleFieldChange(index, 'type', e.target.value)}
-                        style={{ width: '100%' }}
-                      >
+                      <select value={field.type} onChange={e => handleFieldChange(index, 'type', e.target.value)} style={{ width: '100%' }}>
                         <option value="text">Texto corto</option>
-                        <option value="textarea">Texto largo (Párrafo)</option>
+                        <option value="textarea">Texto largo</option>
                         <option value="email">Correo electrónico</option>
                       </select>
                     </div>
-
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label style={{ fontSize: 12 }}>Estilo / Categoría</label>
-                      <select
-                        value={field.category || 'standard'}
-                        onChange={e => handleFieldChange(index, 'category', e.target.value)}
-                        style={{ width: '100%' }}
-                      >
+                      <label style={{ fontSize: 12 }}>Categoría</label>
+                      <select value={field.category || 'standard'} onChange={e => handleFieldChange(index, 'category', e.target.value)} style={{ width: '100%' }}>
                         <option value="standard">Estándar</option>
                         <option value="luces">Luces (Verde)</option>
                         <option value="sombras">Sombras (Naranja)</option>
@@ -239,38 +217,18 @@ export default function FormEditor({ setPage }) {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label style={{ fontSize: 12 }}>Texto sugerido (Placeholder)</label>
-                      <input
-                        type="text"
-                        value={field.placeholder || ''}
-                        onChange={e => handleFieldChange(index, 'placeholder', e.target.value)}
-                        placeholder="Escribe el texto de ejemplo..."
-                      />
+                      <label style={{ fontSize: 12 }}>Placeholder</label>
+                      <input type="text" value={field.placeholder || ''} onChange={e => handleFieldChange(index, 'placeholder', e.target.value)} placeholder="Texto de ejemplo..." />
                     </div>
-
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontSize: 12 }}>Aclaración (Hint)</label>
-                      <input
-                        type="text"
-                        value={field.hint || ''}
-                        onChange={e => handleFieldChange(index, 'hint', e.target.value)}
-                        placeholder="Escribe un consejo o aclaración..."
-                      />
+                      <input type="text" value={field.hint || ''} onChange={e => handleFieldChange(index, 'hint', e.target.value)} placeholder="Consejo o aclaración..." />
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input
-                      type="checkbox"
-                      id={`req-${field.key}`}
-                      checked={field.required}
-                      disabled={isProtected}
-                      onChange={e => handleFieldChange(index, 'required', e.target.checked)}
-                      style={{ width: 'auto', cursor: 'pointer' }}
-                    />
-                    <label htmlFor={`req-${field.key}`} style={{ cursor: 'pointer', fontSize: 13, marginBottom: 0 }}>
-                      Es obligatorio responder esta pregunta
-                    </label>
+                    <input type="checkbox" id={`req-${field.key}`} checked={field.required} disabled={isProtected} onChange={e => handleFieldChange(index, 'required', e.target.checked)} style={{ width: 'auto', cursor: 'pointer' }} />
+                    <label htmlFor={`req-${field.key}`} style={{ cursor: 'pointer', fontSize: 13, marginBottom: 0 }}>Es obligatorio responder esta pregunta</label>
                   </div>
                 </div>
               )
