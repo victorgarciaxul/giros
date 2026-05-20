@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { loadFormConfig, saveFormConfig, isConfigured } from '../lib/github'
+import { loadFormConfig, saveFormConfig, isConfigured, getShareableLink } from '../lib/github'
 
 export default function FormEditor({ setPage }) {
   const [formFields, setFormFields] = useState([])
@@ -7,7 +7,15 @@ export default function FormEditor({ setPage }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  const [copied, setCopied] = useState(false)
   const configured = isConfigured()
+
+  function handleCopyLink() {
+    const url = getShareableLink('form')
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
 
   useEffect(() => {
     async function loadFields() {
@@ -92,8 +100,8 @@ export default function FormEditor({ setPage }) {
     <>
       <div className="page-header">
         <div>
-          <h2>Editar Formulario</h2>
-          <p>Añadí, reordená o personalizá las preguntas de tu formulario</p>
+          <h2>Formularios</h2>
+          <p>Compartí el enlace para que te lo rellenen, o editá las preguntas</p>
         </div>
         <div className="btn-row" style={{ margin: 0 }}>
           <button className="btn btn-ghost btn-sm" onClick={handleAddField} disabled={loading} style={{ gap: 6 }}>
@@ -106,6 +114,56 @@ export default function FormEditor({ setPage }) {
       </div>
 
       <div className="page-content" style={{ maxWidth: 800 }}>
+
+        {/* Share link card */}
+        <div className="card" style={{ marginBottom: 32, borderLeft: '4px solid var(--xul-red)' }}>
+          <div className="card-body" style={{ padding: '24px 28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-heading)', marginBottom: 4 }}>Enlace del formulario</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Compartí este enlace para que las personas lo rellenen y envíen</p>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={getShareableLink('form')}
+                  onClick={e => e.target.select()}
+                  style={{ background: 'var(--bg)', border: '1.5px solid var(--border)', fontFamily: 'monospace', fontSize: 12.5, cursor: 'text', minWidth: 260 }}
+                />
+                <button className="btn btn-primary btn-sm" onClick={handleCopyLink} style={{ gap: 6, flexShrink: 0 }}>
+                  {copied ? (
+                    <>
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ width: 14, height: 14 }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      ¡Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
+                      </svg>
+                      Copiar enlace
+                    </>
+                  )}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => window.open(getShareableLink('form'), '_blank')}
+                  style={{ gap: 6, flexShrink: 0 }}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Abrir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 20 }}>Preguntas del formulario</h3>
 
         {saved && <div className="alert alert-success">Formulario guardado con éxito</div>}
         {error && <div className="alert alert-error">{error}</div>}
