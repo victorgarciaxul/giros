@@ -6,6 +6,7 @@ import FormEditor from './components/FormEditor'
 import Settings from './components/Settings'
 import SharedView from './components/SharedView'
 import LoginPage from './components/LoginPage'
+import Media from './components/Media'
 
 const SESSION_KEY = 'giros_session'
 
@@ -103,6 +104,7 @@ export default function App() {
       {page === 'dashboard' && <Dashboard setPage={setPage} />}
       {page === 'editor'    && <FormEditor setPage={setPage} />}
       {page === 'settings'  && <Settings />}
+      {page === 'media'     && <Media />}
       {page === 'shared'    && <SharedView id={sharedId} setPage={setPage} />}
     </Layout>
   )

@@ -31,6 +31,18 @@ async function ensureTables() {
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS media (
+      id           TEXT PRIMARY KEY,
+      title        TEXT NOT NULL,
+      recorded_at  DATE,
+      description  TEXT,
+      thumbnail    TEXT,
+      video_data   TEXT,
+      video_name   TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `
   tablesReady = true
 }
 
@@ -84,6 +96,41 @@ export async function saveFormConfig(fields) {
       SET fields     = EXCLUDED.fields,
           updated_at = EXCLUDED.updated_at
   `
+}
+
+export async function loadMedia() {
+  await ensureTables()
+  const rows = await sql`SELECT * FROM media ORDER BY recorded_at DESC NULLS LAST, created_at DESC`
+  return rows.map(r => ({
+    id: r.id, title: r.title, recordedAt: r.recorded_at,
+    description: r.description, thumbnail: r.thumbnail,
+    videoData: r.video_data, videoName: r.video_name, createdAt: r.created_at,
+  }))
+}
+
+export async function saveMedia(item) {
+  await ensureTables()
+  await sql`
+    INSERT INTO media (id, title, recorded_at, description, thumbnail, video_data, video_name, created_at)
+    VALUES (
+      ${item.id}, ${item.title}, ${item.recordedAt || null},
+      ${item.description || null}, ${item.thumbnail || null},
+      ${item.videoData || null}, ${item.videoName || null},
+      ${item.createdAt || new Date().toISOString()}
+    )
+    ON CONFLICT (id) DO UPDATE
+      SET title       = EXCLUDED.title,
+          recorded_at = EXCLUDED.recorded_at,
+          description = EXCLUDED.description,
+          thumbnail   = EXCLUDED.thumbnail,
+          video_data  = EXCLUDED.video_data,
+          video_name  = EXCLUDED.video_name
+  `
+}
+
+export async function deleteMedia(id) {
+  await ensureTables()
+  await sql`DELETE FROM media WHERE id = ${id}`
 }
 
 export async function testConnection() {
