@@ -57,7 +57,7 @@ function renderVideoPlayer(item) {
     return (
       <iframe
         src={toDriveEmbed(url)}
-        style={{ width: '100%', height: 400, border: 'none', display: 'block' }}
+        style={{ width: '100%', height: '100%', border: 'none', display: 'block', flex: 1 }}
         allow="autoplay"
         allowFullScreen
       />
@@ -71,7 +71,7 @@ function renderVideoPlayer(item) {
         poster={item.thumbnail || undefined}
         controls
         autoPlay
-        style={{ width: '100%', maxHeight: '65vh', display: 'block', background: '#000' }}
+        style={{ width: '100%', height: '100%', display: 'block', background: '#000', flex: 1 }}
       />
     )
   }
@@ -114,7 +114,7 @@ export default function VideoView({ id }) {
   }
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', width: '100%' }}>
       <GirosHeader />
 
       {loading && (
@@ -139,15 +139,17 @@ export default function VideoView({ id }) {
       )}
 
       {!loading && item && (
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 20px 80px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 80px' }}>
 
           {/* Video player */}
           <div style={{
             borderRadius: 16, overflow: 'hidden',
             background: '#000',
             boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-            marginBottom: 32, minHeight: 200,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 32,
+            width: '100%',
+            aspectRatio: '16/9',
+            display: 'flex', alignItems: 'stretch',
           }}>
             {renderVideoPlayer(item)}
           </div>
