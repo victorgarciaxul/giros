@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { upload } from '@vercel/blob/client'
 import { loadMedia, saveMedia, deleteMedia, isConfigured, getShareableLink } from '../lib/github'
 import DatePicker from './DatePicker'
 
@@ -8,17 +9,15 @@ function genId() {
 
 async function uploadToBlob(file, onProgress) {
   onProgress('Subiendo video...')
-  const res = await fetch(
-    `/api/upload?filename=${encodeURIComponent(file.name)}`,
-    {
-      method: 'POST',
-      body: file,
-      headers: { 'x-content-type': file.type || 'video/mp4' },
-    }
-  )
-  if (!res.ok) throw new Error(`Error al subir: ${res.status} ${await res.text()}`)
-  const { url } = await res.json()
-  return url
+  // Direct browser → Vercel Blob CDN upload (no 4.5MB serverless limit)
+  const blob = await upload(file.name, file, {
+    access: 'public',
+    handleUploadUrl: '/api/upload',
+    onUploadProgress: ({ percentage }) => {
+      onProgress(`Subiendo... ${Math.round(percentage)}%`)
+    },
+  })
+  return blob.url
 }
 
 function readFileAsDataURL(file) {
@@ -38,27 +37,17 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-// If it's already an http URL, return it directly. Only convert data URLs to blob.
 function useBlobUrl(dataUrl) {
   const [blobUrl, setBlobUrl] = useState(null)
+  const [error, setError]     = useState(false)
   useEffect(() => {
     if (!dataUrl) return
+    // CDN URL — use directly, no conversion needed
     if (dataUrl.startsWith('http')) { setBlobUrl(dataUrl); return }
-    // Legacy base64 fallback
-    let objectUrl
-    try {
-      const [header, b64] = dataUrl.split(',')
-      const mime = header.match(/:(.*?);/)?.[1] ?? 'video/mp4'
-      const raw = atob(b64)
-      const buf = new Uint8Array(raw.length)
-      for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i)
-      const blob = new Blob([buf], { type: mime })
-      objectUrl = URL.createObjectURL(blob)
-      setBlobUrl(objectUrl)
-    } catch { setBlobUrl(dataUrl) }
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
+    // Legacy base64 — mark as legacy error immediately
+    setError(true)
   }, [dataUrl])
-  return blobUrl
+  return { blobUrl, legacy: error }
 }
 
 // ── Upload Modal ─────────────────────────────────────────────────────────────
@@ -234,7 +223,7 @@ function UploadModal({ onSave, onClose }) {
 function PlayerModal({ item, onClose, onDelete }) {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied]     = useState(false)
-  const blobUrl = useBlobUrl(item.videoData)
+  const { blobUrl, legacy } = useBlobUrl(item.videoData)
 
   async function handleDelete() {
     if (!confirm(`¿Eliminar "${item.title}"?`)) return
