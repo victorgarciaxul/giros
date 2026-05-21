@@ -1250,6 +1250,6 @@ tr:last-child td {
   font-family: 'SF Mono', 'Fira Mono', 'Menlo', 'Consolas', monospace;
   font-size: 12px;
   color: var(--text-muted);
-  opacity: 0.55;
+  opacity: 0.3;
   letter-spacing: 0.3px;
 }
