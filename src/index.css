@@ -1244,3 +1244,12 @@ tr:last-child td {
   color: #334155;
   letter-spacing: 0.5px;
 }
+
+/* Media URL input — monospace placeholder */
+.media-url-input::placeholder {
+  font-family: 'SF Mono', 'Fira Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.55;
+  letter-spacing: 0.3px;
+}

@@ -148,29 +148,66 @@ function UploadModal({ onSave, onClose }) {
 
           {/* URL tab */}
           {tab === 'url' && (
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label style={{ marginBottom: 8 }}>Enlace del video</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Supported sources pills */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Google Drive', color: '#4285F4' },
+                  { label: 'YouTube',      color: '#FF0000' },
+                  { label: 'Loom',         color: '#625DF5' },
+                  { label: 'URL directa',  color: 'var(--text-muted)' },
+                ].map(s => (
+                  <span key={s.label} style={{
+                    fontSize: 11, fontWeight: 600, padding: '3px 9px',
+                    borderRadius: 20, background: 'var(--bg)',
+                    border: '1px solid var(--border)',
+                    color: s.color, letterSpacing: 0.2,
+                  }}>{s.label}</span>
+                ))}
+              </div>
+
+              {/* Input */}
               <div style={{ position: 'relative' }}>
                 <svg fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" strokeWidth={2}
-                  style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, pointerEvents: 'none' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                  style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, pointerEvents: 'none', flexShrink: 0 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
                 <input
                   type="url"
                   value={videoUrl}
                   onChange={e => { setVideoUrl(e.target.value); setError(null) }}
-                  placeholder="Pega el enlace de Google Drive, YouTube..."
-                  style={{ paddingLeft: 38 }}
+                  placeholder="https://drive.google.com/file/d/..."
+                  className="media-url-input"
+                  style={{
+                    paddingLeft: 40, paddingRight: 16,
+                    fontFamily: videoUrl ? 'monospace' : 'inherit',
+                    fontSize: videoUrl ? 12.5 : 13,
+                    letterSpacing: videoUrl ? 0.2 : 'normal',
+                  }}
                   autoFocus
                 />
               </div>
+
+              {/* Smart hint */}
               {videoUrl && (
-                <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 12, height: 12, flexShrink: 0 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {videoUrl.includes('drive.google.com') ? 'Google Drive detectado — se reproducirá con el player de Drive' : 'URL directa de video'}
-                </p>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 12px', borderRadius: 8,
+                  background: videoUrl.includes('drive.google.com') ? 'rgba(66,133,244,0.08)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${videoUrl.includes('drive.google.com') ? 'rgba(66,133,244,0.25)' : 'var(--border)'}`,
+                }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                    background: videoUrl.includes('drive.google.com') ? '#4285F4' : 'var(--success)',
+                  }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                    {videoUrl.includes('drive.google.com')
+                      ? 'Google Drive detectado — se reproducirá con el player integrado'
+                      : videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')
+                        ? 'YouTube detectado — se abrirá en una nueva pestaña'
+                        : 'URL de video directa — se reproducirá en el player nativo'}
+                  </span>
+                </div>
               )}
             </div>
           )}
