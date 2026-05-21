@@ -1246,6 +1246,11 @@ tr:last-child td {
 }
 
 /* Media URL input — monospace placeholder */
+.media-url-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .media-url-input::placeholder {
   font-family: 'SF Mono', 'Fira Mono', 'Menlo', 'Consolas', monospace;
   font-size: 12px;

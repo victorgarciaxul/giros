@@ -180,6 +180,7 @@ function UploadModal({ onSave, onClose }) {
                   className="media-url-input"
                   style={{
                     paddingLeft: 40, paddingRight: 16,
+                    width: '100%', boxSizing: 'border-box',
                     fontFamily: videoUrl ? 'monospace' : 'inherit',
                     fontSize: videoUrl ? 12.5 : 13,
                     letterSpacing: videoUrl ? 0.2 : 'normal',
