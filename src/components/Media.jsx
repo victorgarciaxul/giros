@@ -113,14 +113,6 @@ function UploadModal({ onSave, onClose }) {
     }
   }
 
-  const tabStyle = (active) => ({
-    flex: 1, padding: '8px 0', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-    border: 'none', borderRadius: 'var(--radius)', background: 'none',
-    color: active ? 'var(--primary)' : 'var(--text-muted)',
-    borderBottom: active ? '2px solid var(--primary)' : '2px solid transparent',
-    transition: 'color .15s, border-color .15s',
-  })
-
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !saving && onClose()}>
       <div className="modal" style={{ maxWidth: 560 }}>
@@ -131,22 +123,55 @@ function UploadModal({ onSave, onClose }) {
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Tab toggle */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
-            <button style={tabStyle(tab === 'url')}  onClick={() => { setTab('url');  setError(null) }}>Enlace</button>
-            <button style={tabStyle(tab === 'file')} onClick={() => { setTab('file'); setError(null) }}>Archivo</button>
+          {/* Segmented control */}
+          <div style={{ display: 'flex', background: 'var(--bg)', borderRadius: 10, padding: 4, gap: 2 }}>
+            {[
+              { id: 'url',  icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>, label: 'Enlace' },
+              { id: 'file', icon: <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>, label: 'Archivo' },
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => { setTab(t.id); setError(null) }}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '8px 0', border: 'none', borderRadius: 7, cursor: 'pointer',
+                  fontSize: 13, fontWeight: 600, transition: 'all .15s',
+                  background: tab === t.id ? 'var(--surface)' : 'transparent',
+                  color: tab === t.id ? 'var(--text-heading)' : 'var(--text-muted)',
+                  boxShadow: tab === t.id ? '0 1px 4px rgba(0,0,0,0.2)' : 'none',
+                }}
+              >
+                {t.icon}{t.label}
+              </button>
+            ))}
           </div>
 
           {/* URL tab */}
           {tab === 'url' && (
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Enlace del video</label>
-              <input
-                type="url"
-                value={videoUrl}
-                onChange={e => { setVideoUrl(e.target.value); setError(null) }}
-                placeholder="https://drive.google.com/file/d/... o cualquier URL de video"
-              />
+              <label style={{ marginBottom: 8 }}>Enlace del video</label>
+              <div style={{ position: 'relative' }}>
+                <svg fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" strokeWidth={2}
+                  style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, pointerEvents: 'none' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                </svg>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={e => { setVideoUrl(e.target.value); setError(null) }}
+                  placeholder="Pega el enlace de Google Drive, YouTube..."
+                  style={{ paddingLeft: 38 }}
+                  autoFocus
+                />
+              </div>
+              {videoUrl && (
+                <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 12, height: 12, flexShrink: 0 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {videoUrl.includes('drive.google.com') ? 'Google Drive detectado — se reproducirá con el player de Drive' : 'URL directa de video'}
+                </p>
+              )}
             </div>
           )}
 
