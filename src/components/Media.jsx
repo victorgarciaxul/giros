@@ -6,6 +6,21 @@ function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 }
 
+async function uploadToBlob(file, onProgress) {
+  onProgress('Subiendo video...')
+  const res = await fetch(
+    `/api/upload?filename=${encodeURIComponent(file.name)}`,
+    {
+      method: 'POST',
+      body: file,
+      headers: { 'x-content-type': file.type || 'video/mp4' },
+    }
+  )
+  if (!res.ok) throw new Error(`Error al subir: ${res.status} ${await res.text()}`)
+  const { url } = await res.json()
+  return url
+}
+
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -23,16 +38,24 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-// Converts a base64 data URL to a blob URL for efficient video playback
+// If it's already an http URL, return it directly. Only convert data URLs to blob.
 function useBlobUrl(dataUrl) {
   const [blobUrl, setBlobUrl] = useState(null)
   useEffect(() => {
     if (!dataUrl) return
+    if (dataUrl.startsWith('http')) { setBlobUrl(dataUrl); return }
+    // Legacy base64 fallback
     let objectUrl
-    fetch(dataUrl)
-      .then(r => r.blob())
-      .then(blob => { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl) })
-      .catch(() => setBlobUrl(dataUrl)) // fallback to data URL
+    try {
+      const [header, b64] = dataUrl.split(',')
+      const mime = header.match(/:(.*?);/)?.[1] ?? 'video/mp4'
+      const raw = atob(b64)
+      const buf = new Uint8Array(raw.length)
+      for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i)
+      const blob = new Blob([buf], { type: mime })
+      objectUrl = URL.createObjectURL(blob)
+      setBlobUrl(objectUrl)
+    } catch { setBlobUrl(dataUrl) }
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [dataUrl])
   return blobUrl
@@ -66,11 +89,12 @@ function UploadModal({ onSave, onClose }) {
     setSaving(true)
     setError(null)
     try {
-      setProgress('Leyendo video...')
-      const videoData = await readFileAsDataURL(videoFile)
+      // Upload video to Vercel Blob (CDN) — no base64, just a URL
+      const videoUrl = await uploadToBlob(videoFile, setProgress)
+      // Thumbnail stays as base64 (small image, fine for Neon)
       let thumbnail = null
       if (thumbFile) {
-        setProgress('Leyendo miniatura...')
+        setProgress('Procesando miniatura...')
         thumbnail = await readFileAsDataURL(thumbFile)
       }
       setProgress('Guardando...')
@@ -80,7 +104,7 @@ function UploadModal({ onSave, onClose }) {
         recordedAt: date || null,
         description: description.trim() || null,
         thumbnail,
-        videoData,
+        videoData: videoUrl,   // stores the Blob CDN URL
         videoName: videoFile.name,
         createdAt: new Date().toISOString(),
       })

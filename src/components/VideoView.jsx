@@ -5,11 +5,20 @@ function useBlobUrl(dataUrl) {
   const [blobUrl, setBlobUrl] = useState(null)
   useEffect(() => {
     if (!dataUrl) return
+    // If it's already a CDN/http URL, use it directly
+    if (dataUrl.startsWith('http')) { setBlobUrl(dataUrl); return }
+    // Legacy base64 fallback
     let objectUrl
-    fetch(dataUrl)
-      .then(r => r.blob())
-      .then(blob => { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl) })
-      .catch(() => setBlobUrl(dataUrl))
+    try {
+      const [header, b64] = dataUrl.split(',')
+      const mime = header.match(/:(.*?);/)?.[1] ?? 'video/mp4'
+      const raw = atob(b64)
+      const buf = new Uint8Array(raw.length)
+      for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i)
+      const blob = new Blob([buf], { type: mime })
+      objectUrl = URL.createObjectURL(blob)
+      setBlobUrl(objectUrl)
+    } catch { setBlobUrl(dataUrl) }
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [dataUrl])
   return blobUrl
