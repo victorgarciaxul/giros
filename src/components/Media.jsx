@@ -17,7 +17,25 @@ function readFileAsDataURL(file) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const s = dateStr instanceof Date ? dateStr.toISOString().slice(0, 10) : String(dateStr).slice(0, 10)
+  const d = new Date(s + 'T12:00:00')
+  if (isNaN(d)) return '—'
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+// Converts a base64 data URL to a blob URL for efficient video playback
+function useBlobUrl(dataUrl) {
+  const [blobUrl, setBlobUrl] = useState(null)
+  useEffect(() => {
+    if (!dataUrl) return
+    let objectUrl
+    fetch(dataUrl)
+      .then(r => r.blob())
+      .then(blob => { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl) })
+      .catch(() => setBlobUrl(dataUrl)) // fallback to data URL
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [dataUrl])
+  return blobUrl
 }
 
 // ── Upload Modal ─────────────────────────────────────────────────────────────
@@ -192,6 +210,7 @@ function UploadModal({ onSave, onClose }) {
 function PlayerModal({ item, onClose, onDelete }) {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied]     = useState(false)
+  const blobUrl = useBlobUrl(item.videoData)
 
   async function handleDelete() {
     if (!confirm(`¿Eliminar "${item.title}"?`)) return
@@ -227,13 +246,20 @@ function PlayerModal({ item, onClose, onDelete }) {
         </div>
 
         <div className="modal-body" style={{ padding: 0 }}>
-          <video
-            src={item.videoData}
-            poster={item.thumbnail || undefined}
-            controls
-            autoPlay
-            style={{ width: '100%', maxHeight: '60vh', background: '#000', display: 'block' }}
-          />
+          {!blobUrl ? (
+            <div style={{ width: '100%', height: 240, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+              <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: '#fff' }} />
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Preparando video...</span>
+            </div>
+          ) : (
+            <video
+              src={blobUrl}
+              poster={item.thumbnail || undefined}
+              controls
+              autoPlay
+              style={{ width: '100%', maxHeight: '60vh', background: '#000', display: 'block' }}
+            />
+          )}
           {item.description && (
             <p style={{ padding: '20px 24px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7 }}>
               {item.description}

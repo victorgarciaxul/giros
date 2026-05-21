@@ -1,5 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getMediaById } from '../lib/github'
+
+function useBlobUrl(dataUrl) {
+  const [blobUrl, setBlobUrl] = useState(null)
+  useEffect(() => {
+    if (!dataUrl) return
+    let objectUrl
+    fetch(dataUrl)
+      .then(r => r.blob())
+      .then(blob => { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl) })
+      .catch(() => setBlobUrl(dataUrl))
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
+  }, [dataUrl])
+  return blobUrl
+}
 
 function GirosHeader() {
   return (
@@ -32,9 +46,10 @@ function GirosHeader() {
 
 function formatDate(dateStr) {
   if (!dateStr) return null
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
+  const s = dateStr instanceof Date ? dateStr.toISOString().slice(0, 10) : String(dateStr).slice(0, 10)
+  const d = new Date(s + 'T12:00:00')
+  if (isNaN(d)) return null
+  return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 export default function VideoView({ id }) {
@@ -42,6 +57,7 @@ export default function VideoView({ id }) {
   const [loading, setLoad]  = useState(true)
   const [error, setError]   = useState(null)
   const [copied, setCopied] = useState(false)
+  const blobUrl = useBlobUrl(item?.videoData)
 
   useEffect(() => {
     async function load() {
@@ -97,14 +113,23 @@ export default function VideoView({ id }) {
             borderRadius: 16, overflow: 'hidden',
             background: '#000',
             boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
-            marginBottom: 32,
+            marginBottom: 32, minHeight: 200,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <video
-              src={item.videoData}
-              poster={item.thumbnail || undefined}
-              controls
-              style={{ width: '100%', maxHeight: '60vh', display: 'block', background: '#000' }}
-            />
+            {!blobUrl ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
+                <span className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: '#fff' }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Cargando video...</span>
+              </div>
+            ) : (
+              <video
+                src={blobUrl}
+                poster={item.thumbnail || undefined}
+                controls
+                autoPlay
+                style={{ width: '100%', maxHeight: '65vh', display: 'block', background: '#000' }}
+              />
+            )}
           </div>
 
           {/* Info card */}
