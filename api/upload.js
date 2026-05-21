@@ -1,21 +1,27 @@
 import { put } from '@vercel/blob'
 
-export const config = { runtime: 'edge' }
+// Disable body parser so the raw stream goes directly to Vercel Blob
+export const config = {
+  api: { bodyParser: false },
+}
 
-export default async function handler(request) {
-  if (request.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { searchParams } = new URL(request.url)
-  const filename = searchParams.get('filename') || 'upload'
+  const url = new URL(req.url, `http://${req.headers.host}`)
+  const filename = url.searchParams.get('filename') || 'upload'
+  const contentType = req.headers['x-content-type'] || req.headers['content-type'] || 'video/mp4'
 
-  const blob = await put(filename, request.body, {
-    access: 'public',
-    contentType: request.headers.get('x-content-type') || 'application/octet-stream',
-  })
-
-  return new Response(JSON.stringify({ url: blob.url }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  try {
+    // Pass req directly as stream — bypasses 4.5 MB body limit
+    const blob = await put(filename, req, {
+      access: 'public',
+      contentType,
+    })
+    return res.status(200).json({ url: blob.url })
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
+  }
 }
