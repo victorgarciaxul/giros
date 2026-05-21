@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 
 const USERS = [
   { email: 'josecastillo@xul.es', password: 'Xul14$' },
-  { email: 'carlagarcia@xul.es', password: 'Xul14$' },
+  { email: 'carlagarcia@xul.es',  password: 'Xul14$' },
   { email: 'tech@xul.es',         password: 'Xul14$' },
+  { email: 'elenarojo@xul.es',    password: 'Xul14$' },
 ]
 
 const FLOATING_WORDS = [
