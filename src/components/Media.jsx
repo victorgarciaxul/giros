@@ -9,7 +9,6 @@ function genId() {
 
 async function uploadToBlob(file, onProgress) {
   onProgress('Subiendo video...')
-  // Direct browser → Vercel Blob CDN upload (no 4.5MB serverless limit)
   const blob = await upload(file.name, file, {
     access: 'public',
     handleUploadUrl: '/api/upload',
@@ -37,21 +36,21 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function useBlobUrl(dataUrl) {
-  const [blobUrl, setBlobUrl] = useState(null)
-  const [error, setError]     = useState(false)
-  useEffect(() => {
-    if (!dataUrl) return
-    // CDN URL — use directly, no conversion needed
-    if (dataUrl.startsWith('http')) { setBlobUrl(dataUrl); return }
-    // Legacy base64 — mark as legacy error immediately
-    setError(true)
-  }, [dataUrl])
-  return { blobUrl, legacy: error }
+function toDriveEmbed(url) {
+  if (!url) return null
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/)
+  if (m) return `https://drive.google.com/file/d/${m[1]}/preview`
+  return null
+}
+
+function isGoogleDrive(url) {
+  return url && url.includes('drive.google.com')
 }
 
 // ── Upload Modal ─────────────────────────────────────────────────────────────
 function UploadModal({ onSave, onClose }) {
+  const [tab, setTab]           = useState('url')   // 'url' | 'file'
+  const [videoUrl, setVideoUrl] = useState('')
   const [title, setTitle]       = useState('')
   const [date, setDate]         = useState('')
   const [description, setDesc]  = useState('')
@@ -74,18 +73,27 @@ function UploadModal({ onSave, onClose }) {
 
   async function handleSave() {
     if (!title.trim()) { setError('El título es obligatorio.'); return }
-    if (!videoFile)    { setError('Seleccioná un archivo de video.'); return }
+    if (tab === 'url' && !videoUrl.trim()) { setError('Pegá una URL de video.'); return }
+    if (tab === 'file' && !videoFile)      { setError('Seleccioná un archivo de video.'); return }
     setSaving(true)
     setError(null)
     try {
-      // Upload video to Vercel Blob (CDN) — no base64, just a URL
-      const videoUrl = await uploadToBlob(videoFile, setProgress)
-      // Thumbnail stays as base64 (small image, fine for Neon)
+      let videoData
+      let videoName = null
+
+      if (tab === 'url') {
+        videoData = videoUrl.trim()
+      } else {
+        videoData = await uploadToBlob(videoFile, setProgress)
+        videoName = videoFile.name
+      }
+
       let thumbnail = null
       if (thumbFile) {
         setProgress('Procesando miniatura...')
         thumbnail = await readFileAsDataURL(thumbFile)
       }
+
       setProgress('Guardando...')
       await onSave({
         id: genId(),
@@ -93,8 +101,8 @@ function UploadModal({ onSave, onClose }) {
         recordedAt: date || null,
         description: description.trim() || null,
         thumbnail,
-        videoData: videoUrl,   // stores the Blob CDN URL
-        videoName: videoFile.name,
+        videoData,
+        videoName,
         createdAt: new Date().toISOString(),
       })
       onClose()
@@ -104,6 +112,14 @@ function UploadModal({ onSave, onClose }) {
       setProgress('')
     }
   }
+
+  const tabStyle = (active) => ({
+    flex: 1, padding: '8px 0', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+    border: 'none', borderRadius: 'var(--radius)', background: 'none',
+    color: active ? 'var(--primary)' : 'var(--text-muted)',
+    borderBottom: active ? '2px solid var(--primary)' : '2px solid transparent',
+    transition: 'color .15s, border-color .15s',
+  })
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && !saving && onClose()}>
@@ -115,43 +131,64 @@ function UploadModal({ onSave, onClose }) {
 
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Video upload */}
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Archivo de video</label>
-            <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => setVideo(e.target.files[0] || null)} />
-            <div
-              onClick={() => videoRef.current.click()}
-              style={{
-                border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '20px 16px',
-                textAlign: 'center', cursor: 'pointer', transition: 'border-color .15s',
-                background: videoFile ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
-                borderColor: videoFile ? 'var(--success)' : 'var(--border)',
-              }}
-              onMouseEnter={e => { if (!videoFile) e.currentTarget.style.borderColor = 'var(--primary)' }}
-              onMouseLeave={e => { if (!videoFile) e.currentTarget.style.borderColor = 'var(--border)' }}
-            >
-              {videoFile ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--success)" strokeWidth={2} style={{ width: 20, height: 20, flexShrink: 0 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                  </svg>
-                  <div style={{ textAlign: 'left' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-heading)' }}>{videoFile.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(videoFile.size / 1024 / 1024).toFixed(1)} MB</div>
-                  </div>
-                  <button onClick={e => { e.stopPropagation(); setVideo(null) }} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</button>
-                </div>
-              ) : (
-                <>
-                  <svg fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" strokeWidth={1.5} style={{ width: 32, height: 32, margin: '0 auto 8px' }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                  </svg>
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Hacé clic para seleccionar el archivo de video</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.7 }}>MP4, MOV, WebM, AVI...</p>
-                </>
-              )}
-            </div>
+          {/* Tab toggle */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
+            <button style={tabStyle(tab === 'url')}  onClick={() => { setTab('url');  setError(null) }}>Enlace</button>
+            <button style={tabStyle(tab === 'file')} onClick={() => { setTab('file'); setError(null) }}>Archivo</button>
           </div>
+
+          {/* URL tab */}
+          {tab === 'url' && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Enlace del video</label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={e => { setVideoUrl(e.target.value); setError(null) }}
+                placeholder="https://drive.google.com/file/d/... o cualquier URL de video"
+              />
+            </div>
+          )}
+
+          {/* File tab */}
+          {tab === 'file' && (
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Archivo de video</label>
+              <input ref={videoRef} type="file" accept="video/*" style={{ display: 'none' }} onChange={e => setVideo(e.target.files[0] || null)} />
+              <div
+                onClick={() => videoRef.current.click()}
+                style={{
+                  border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '20px 16px',
+                  textAlign: 'center', cursor: 'pointer', transition: 'border-color .15s',
+                  background: videoFile ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
+                  borderColor: videoFile ? 'var(--success)' : 'var(--border)',
+                }}
+                onMouseEnter={e => { if (!videoFile) e.currentTarget.style.borderColor = 'var(--primary)' }}
+                onMouseLeave={e => { if (!videoFile) e.currentTarget.style.borderColor = 'var(--border)' }}
+              >
+                {videoFile ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="var(--success)" strokeWidth={2} style={{ width: 20, height: 20, flexShrink: 0 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-heading)' }}>{videoFile.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(videoFile.size / 1024 / 1024).toFixed(1)} MB</div>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); setVideo(null) }} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16 }}>✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="var(--text-muted)" strokeWidth={1.5} style={{ width: 32, height: 32, margin: '0 auto 8px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                    </svg>
+                    <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 4 }}>Hacé clic para seleccionar el archivo de video</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', opacity: 0.7 }}>MP4, MOV, WebM, AVI...</p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Thumbnail upload */}
           <div className="form-group" style={{ marginBottom: 0 }}>
@@ -223,7 +260,6 @@ function UploadModal({ onSave, onClose }) {
 function PlayerModal({ item, onClose, onDelete }) {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied]     = useState(false)
-  const { blobUrl, legacy } = useBlobUrl(item.videoData)
 
   async function handleDelete() {
     if (!confirm(`¿Eliminar "${item.title}"?`)) return
@@ -243,6 +279,43 @@ function PlayerModal({ item, onClose, onDelete }) {
     setTimeout(() => setCopied(false), 2500)
   }
 
+  function renderPlayer() {
+    const url = item.videoData
+    if (!url) return null
+
+    if (isGoogleDrive(url)) {
+      return (
+        <iframe
+          src={toDriveEmbed(url)}
+          style={{ width: '100%', height: 400, border: 'none', display: 'block' }}
+          allow="autoplay"
+          allowFullScreen
+        />
+      )
+    }
+
+    if (url.startsWith('http')) {
+      return (
+        <video
+          src={url}
+          poster={item.thumbnail || undefined}
+          controls
+          autoPlay
+          style={{ width: '100%', maxHeight: '60vh', background: '#000', display: 'block' }}
+        />
+      )
+    }
+
+    // Legacy base64
+    return (
+      <div style={{ width: '100%', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', lineHeight: 1.6 }}>
+          Este video fue subido con el sistema antiguo. Eliminalo y vuelve a subirlo.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 780, width: '96vw' }}>
@@ -259,20 +332,7 @@ function PlayerModal({ item, onClose, onDelete }) {
         </div>
 
         <div className="modal-body" style={{ padding: 0 }}>
-          {!blobUrl ? (
-            <div style={{ width: '100%', height: 240, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-              <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: '#fff' }} />
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Preparando video...</span>
-            </div>
-          ) : (
-            <video
-              src={blobUrl}
-              poster={item.thumbnail || undefined}
-              controls
-              autoPlay
-              style={{ width: '100%', maxHeight: '60vh', background: '#000', display: 'block' }}
-            />
-          )}
+          {renderPlayer()}
           {item.description && (
             <p style={{ padding: '20px 24px 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.7 }}>
               {item.description}

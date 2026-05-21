@@ -1,27 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { getMediaById } from '../lib/github'
 
-function useBlobUrl(dataUrl) {
-  const [blobUrl, setBlobUrl] = useState(null)
-  useEffect(() => {
-    if (!dataUrl) return
-    // If it's already a CDN/http URL, use it directly
-    if (dataUrl.startsWith('http')) { setBlobUrl(dataUrl); return }
-    // Legacy base64 fallback
-    let objectUrl
-    try {
-      const [header, b64] = dataUrl.split(',')
-      const mime = header.match(/:(.*?);/)?.[1] ?? 'video/mp4'
-      const raw = atob(b64)
-      const buf = new Uint8Array(raw.length)
-      for (let i = 0; i < raw.length; i++) buf[i] = raw.charCodeAt(i)
-      const blob = new Blob([buf], { type: mime })
-      objectUrl = URL.createObjectURL(blob)
-      setBlobUrl(objectUrl)
-    } catch { setBlobUrl(dataUrl) }
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl) }
-  }, [dataUrl])
-  return blobUrl
+function toDriveEmbed(url) {
+  if (!url) return null
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/)
+  if (m) return `https://drive.google.com/file/d/${m[1]}/preview`
+  return null
+}
+
+function isGoogleDrive(url) {
+  return url && url.includes('drive.google.com')
 }
 
 function GirosHeader() {
@@ -61,12 +49,48 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function renderVideoPlayer(item) {
+  const url = item.videoData
+  if (!url) return null
+
+  if (isGoogleDrive(url)) {
+    return (
+      <iframe
+        src={toDriveEmbed(url)}
+        style={{ width: '100%', height: 400, border: 'none', display: 'block' }}
+        allow="autoplay"
+        allowFullScreen
+      />
+    )
+  }
+
+  if (url.startsWith('http')) {
+    return (
+      <video
+        src={url}
+        poster={item.thumbnail || undefined}
+        controls
+        autoPlay
+        style={{ width: '100%', maxHeight: '65vh', display: 'block', background: '#000' }}
+      />
+    )
+  }
+
+  // Legacy base64
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
+      <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 1.6 }}>
+        Este video fue subido con el sistema antiguo. Eliminalo y vuelve a subirlo.
+      </p>
+    </div>
+  )
+}
+
 export default function VideoView({ id }) {
   const [item, setItem]     = useState(null)
   const [loading, setLoad]  = useState(true)
   const [error, setError]   = useState(null)
   const [copied, setCopied] = useState(false)
-  const blobUrl = useBlobUrl(item?.videoData)
 
   useEffect(() => {
     async function load() {
@@ -125,20 +149,7 @@ export default function VideoView({ id }) {
             marginBottom: 32, minHeight: 200,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {!blobUrl ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
-                <span className="spinner" style={{ width: 32, height: 32, borderWidth: 3, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: '#fff' }} />
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>Cargando video...</span>
-              </div>
-            ) : (
-              <video
-                src={blobUrl}
-                poster={item.thumbnail || undefined}
-                controls
-                autoPlay
-                style={{ width: '100%', maxHeight: '65vh', display: 'block', background: '#000' }}
-              />
-            )}
+            {renderVideoPlayer(item)}
           </div>
 
           {/* Info card */}
