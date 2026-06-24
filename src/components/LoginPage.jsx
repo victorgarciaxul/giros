@@ -5,6 +5,7 @@ const USERS = [
   { email: 'carlagarcia@xul.es',  password: 'Xul14$' },
   { email: 'tech@xul.es',         password: 'Xul14$' },
   { email: 'elenarojo@xul.es',    password: 'Xul14$' },
+  { email: 'invitado@xul.es',     password: 'Giros2026*', role: 'guest' },
 ]
 
 const FLOATING_WORDS = [
@@ -42,7 +43,7 @@ export default function LoginPage({ onLogin }) {
         u => u.email.toLowerCase() === email.trim().toLowerCase() && u.password === password
       )
       if (match) {
-        onLogin({ email: match.email })
+        onLogin({ email: match.email, role: match.role || 'admin' })
       } else {
         setError('Usuario o contraseña incorrectos')
         setLoading(false)

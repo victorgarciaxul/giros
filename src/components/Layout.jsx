@@ -47,7 +47,7 @@ export default function Layout({ page, setPage, children, user, onLogout }) {
           <p>Ciclo de encuentros · XUL</p>
         </div>
         <nav className="sidebar-nav">
-          {NAV.map(item => (
+          {NAV.filter(item => user?.role !== 'guest' || item.id === 'media').map(item => (
             <button
               key={item.id}
               className={`nav-item${page === item.id ? ' active' : ''}`}

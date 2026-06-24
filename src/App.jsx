@@ -37,6 +37,7 @@ export default function App() {
   function handleLogin(userData) {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData))
     setUser(userData)
+    if (userData.role === 'guest') setPage('media')
   }
 
   function handleLogout() {
@@ -105,14 +106,17 @@ export default function App() {
     )
   }
 
+  const isGuest = user?.role === 'guest'
+  const safePage = isGuest && page !== 'media' ? 'media' : page
+
   return (
-    <Layout page={page} setPage={setPage} user={user} onLogout={handleLogout}>
-      {page === 'form'      && <FormPage setPage={setPage} isPublic={false} />}
-      {page === 'dashboard' && <Dashboard setPage={setPage} />}
-      {page === 'editor'    && <FormEditor setPage={setPage} />}
-      {page === 'settings'  && <Settings />}
-      {page === 'media'     && <Media />}
-      {page === 'shared'    && <SharedView id={sharedId} setPage={setPage} />}
+    <Layout page={safePage} setPage={setPage} user={user} onLogout={handleLogout}>
+      {safePage === 'form'      && <FormPage setPage={setPage} isPublic={false} />}
+      {safePage === 'dashboard' && <Dashboard setPage={setPage} />}
+      {safePage === 'editor'    && <FormEditor setPage={setPage} />}
+      {safePage === 'settings'  && <Settings />}
+      {safePage === 'media'     && <Media />}
+      {safePage === 'shared'    && <SharedView id={sharedId} setPage={setPage} />}
     </Layout>
   )
 }
