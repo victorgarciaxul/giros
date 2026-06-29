@@ -66,19 +66,6 @@ export default function Layout({ page, setPage, children, user, onLogout }) {
           )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>XUL © 2026</span>
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                title="Cerrar sesión"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#475569', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color .15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--xul-red)'}
-                onMouseLeave={e => e.currentTarget.style.color = '#475569'}
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 16, height: 16 }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            )}
           </div>
         </div>
       </aside>

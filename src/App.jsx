@@ -13,6 +13,17 @@ const SESSION_KEY = 'giros_session'
 
 export default function App() {
   const [user, setUser] = useState(() => {
+    // SSO: si AppCenter pasa el email en la URL, autologin directo
+    const params = new URLSearchParams(window.location.search)
+    const ssoEmail = params.get('sso_email')
+    if (ssoEmail) {
+      const admins = ['victorgarcia@xul.es','carlagarcia@xul.es','tech@xul.es','josecastillo@xul.es','elenarojo@xul.es']
+      const role = admins.includes(ssoEmail.toLowerCase()) ? 'admin' : 'guest'
+      const userData = { email: ssoEmail.toLowerCase(), role }
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData))
+      window.history.replaceState({}, '', window.location.pathname)
+      return userData
+    }
     try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) } catch { return null }
   })
 
