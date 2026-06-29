@@ -60,7 +60,7 @@ export default function App() {
   if (videoId) return <VideoView id={videoId} />
 
   if (!user && !isPublicForm && !sharedId) {
-    return <LoginPage onLogin={handleLogin} />
+    window.location.replace('https://appcenter.xul.es'); return null;
   }
 
   if (!user && sharedId) {
