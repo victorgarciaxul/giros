@@ -320,7 +320,7 @@ function UploadModal({ onSave, onClose }) {
 }
 
 // ── Player Modal ─────────────────────────────────────────────────────────────
-function PlayerModal({ item, onClose, onDelete }) {
+function PlayerModal({ item, onClose, onDelete, isAdmin }) {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied]     = useState(false)
 
@@ -404,9 +404,11 @@ function PlayerModal({ item, onClose, onDelete }) {
         </div>
 
         <div className="modal-footer">
-          <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-            {deleting ? 'Eliminando...' : 'Eliminar'}
-          </button>
+          {isAdmin && (
+            <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={handleCopy} style={{ marginLeft: 'auto', gap: 6 }}>
             {copied ? (
               <><svg fill="none" viewBox="0 0 24 24" stroke="var(--success)" strokeWidth={2.5} style={{ width: 13, height: 13 }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>¡Copiado!</>
@@ -509,7 +511,7 @@ function MediaCard({ item, onClick }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function Media() {
+export default function Media({ isAdmin = false }) {
   const [items, setItems]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
@@ -548,17 +550,19 @@ export default function Media() {
           <h2>Media</h2>
           <p>Videoconferencias y grabaciones del equipo</p>
         </div>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => setUpload(true)}
-          disabled={loading || !configured}
-          style={{ gap: 6 }}
-        >
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Subir video
-        </button>
+        {isAdmin && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setUpload(true)}
+            disabled={loading || !configured}
+            style={{ gap: 6 }}
+          >
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 14, height: 14 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Subir video
+          </button>
+        )}
       </div>
 
       <div className="page-content">
@@ -575,10 +579,14 @@ export default function Media() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
             </svg>
             <h3>No hay videos todavía</h3>
-            <p>Subí la primera videoconferencia del equipo</p>
-            <button className="btn btn-primary" onClick={() => setUpload(true)} style={{ marginTop: 20 }}>
-              Subir video
-            </button>
+            {isAdmin && (
+              <>
+                <p>Subí la primera videoconferencia del equipo</p>
+                <button className="btn btn-primary" onClick={() => setUpload(true)} style={{ marginTop: 20 }}>
+                  Subir video
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
@@ -601,6 +609,7 @@ export default function Media() {
           item={selected}
           onClose={() => setSelected(null)}
           onDelete={handleDelete}
+          isAdmin={isAdmin}
         />
       )}
     </>

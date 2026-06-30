@@ -19,8 +19,8 @@ export default function App() {
     if (ssoEmail) {
       const email = ssoEmail.toLowerCase()
       if (email.endsWith('@xul.es') || email.endsWith('@fundacionxul.org')) {
-        const admins = ['victorgarcia@xul.es','carlagarcia@xul.es','tech@xul.es','josecastillo@xul.es','elenarojo@xul.es','inmaosuna@xul.es']
-        const role = admins.includes(email) ? 'admin' : 'user'
+        const admins = ['victorgarcia@xul.es','carlagarcia@xul.es','josecastillo@xul.es','elenarojo@xul.es']
+        const role = admins.includes(email) ? 'admin' : 'guest'
         const userData = { email, role }
         sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData))
         window.history.replaceState({}, '', window.location.pathname)
@@ -129,7 +129,7 @@ export default function App() {
       {safePage === 'dashboard' && <Dashboard setPage={setPage} />}
       {safePage === 'editor'    && <FormEditor setPage={setPage} />}
       {safePage === 'settings'  && <Settings />}
-      {safePage === 'media'     && <Media />}
+      {safePage === 'media'     && <Media isAdmin={user?.role === 'admin'} />}
       {safePage === 'shared'    && <SharedView id={sharedId} setPage={setPage} />}
     </Layout>
   )
