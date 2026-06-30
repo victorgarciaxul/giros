@@ -17,12 +17,15 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
     const ssoEmail = params.get('sso_email')
     if (ssoEmail) {
-      const admins = ['victorgarcia@xul.es','carlagarcia@xul.es','tech@xul.es','josecastillo@xul.es','elenarojo@xul.es']
-      const role = admins.includes(ssoEmail.toLowerCase()) ? 'admin' : 'guest'
-      const userData = { email: ssoEmail.toLowerCase(), role }
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData))
-      window.history.replaceState({}, '', window.location.pathname)
-      return userData
+      const email = ssoEmail.toLowerCase()
+      if (email.endsWith('@xul.es') || email.endsWith('@fundacionxul.org')) {
+        const admins = ['victorgarcia@xul.es','carlagarcia@xul.es','tech@xul.es','josecastillo@xul.es','elenarojo@xul.es','inmaosuna@xul.es']
+        const role = admins.includes(email) ? 'admin' : 'user'
+        const userData = { email, role }
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData))
+        window.history.replaceState({}, '', window.location.pathname)
+        return userData
+      }
     }
     try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) } catch { return null }
   })
