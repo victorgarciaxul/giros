@@ -70,6 +70,12 @@ function StarlingRating({ mediaId, userEmail, compact = false }) {
     }
   }
 
+  const countByScore = [5,4,3,2,1].map(score => ({
+    score,
+    count: ratings.filter(r => r.rating === score).length,
+  }))
+  const total = ratings.length
+
   if (compact) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
@@ -78,7 +84,7 @@ function StarlingRating({ mediaId, userEmail, compact = false }) {
         ))}
         {avg && (
           <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>
-            {avg} · {ratings.length} {ratings.length === 1 ? 'voto' : 'votos'}
+            {avg} · {total} {total === 1 ? 'voto' : 'votos'}
           </span>
         )}
       </div>
@@ -89,39 +95,74 @@ function StarlingRating({ mediaId, userEmail, compact = false }) {
 
   return (
     <div style={{ padding: '20px 24px', borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 16 }}>
         Valorar este GIRO
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {[1,2,3,4,5].map(i => (
-          <button
-            key={i}
-            onClick={() => handleRate(i)}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(0)}
-            disabled={saving}
-            style={{ background: 'none', border: 'none', cursor: saving ? 'default' : 'pointer', padding: 2, borderRadius: 4, transition: 'transform .1s', transform: hover === i ? 'scale(1.25)' : 'scale(1)' }}
-            title={`${i} estornino${i > 1 ? 's' : ''}`}
-          >
-            <StarlingIcon filled={i <= display} size={28} />
-          </button>
-        ))}
-        <div style={{ marginLeft: 10 }}>
+
+      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+
+        {/* Columna izquierda: puntuación global + estorninos para votar */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: 80 }}>
           {avg ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-heading)' }}>{avg}</span>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ratings.length} {ratings.length === 1 ? 'valoración' : 'valoraciones'}</span>
-            </div>
+            <>
+              <span style={{ fontSize: 36, fontWeight: 700, lineHeight: 1, color: 'var(--text-heading)' }}>{avg}</span>
+              <div style={{ display: 'flex', gap: 3 }}>
+                {[1,2,3,4,5].map(i => <StarlingIcon key={i} filled={i <= Math.round(parseFloat(avg))} size={14} />)}
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{total} {total === 1 ? 'valoración' : 'valoraciones'}</span>
+            </>
           ) : (
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sin valoraciones aún</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>Sin<br/>valoraciones</span>
           )}
         </div>
+
+        {/* Columna centro: barras estilo Google */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5, minWidth: 160 }}>
+          {countByScore.map(({ score, count }) => (
+            <div key={score} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 2, width: 80, flexShrink: 0 }}>
+                {[1,2,3,4,5].map(i => <StarlingIcon key={i} filled={i <= score} size={13} />)}
+              </div>
+              <div style={{ flex: 1, height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: total > 0 ? `${(count / total) * 100}%` : '0%',
+                  background: '#f59e0b',
+                  borderRadius: 4,
+                  transition: 'width .4s ease',
+                }} />
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', width: 16, textAlign: 'right', flexShrink: 0 }}>{count}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Columna derecha: tu voto */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Tu valoración</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[1,2,3,4,5].map(i => (
+              <button
+                key={i}
+                onClick={() => handleRate(i)}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(0)}
+                disabled={saving}
+                style={{ background: 'none', border: 'none', cursor: saving ? 'default' : 'pointer', padding: 2, borderRadius: 4, transition: 'transform .1s', transform: hover === i ? 'scale(1.3)' : 'scale(1)' }}
+                title={`${i} estornino${i > 1 ? 's' : ''}`}
+              >
+                <StarlingIcon filled={i <= display} size={26} />
+              </button>
+            ))}
+          </div>
+          {userRating > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              {saving ? 'Guardando...' : `Has votado ${userRating} ${userRating === 1 ? 'estornino' : 'estorninos'}`}
+            </span>
+          )}
+        </div>
+
       </div>
-      {userRating > 0 && (
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
-          Tu valoración: {userRating} {userRating === 1 ? 'estornino' : 'estorninos'} {saving && '· Guardando...'}
-        </p>
-      )}
     </div>
   )
 }
