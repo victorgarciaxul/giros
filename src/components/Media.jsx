@@ -3,19 +3,35 @@ import { upload } from '@vercel/blob/client'
 import { loadMedia, saveMedia, deleteMedia, isConfigured, getShareableLink, loadRatings, saveRating } from '../lib/github'
 import DatePicker from './DatePicker'
 
-// ── Starling (Estornino) SVG ─────────────────────────────────────────────────
-function StarlingIcon({ filled, size = 22, color = '#f59e0b' }) {
+// ── Starling (Estornino) SVG — posado, vista lateral ────────────────────────
+function StarlingIcon({ filled, size = 24, color = '#f59e0b' }) {
+  const c       = filled ? color : 'var(--text-primary)'
+  const detail  = filled ? '#d97706' : 'var(--text-primary)'
+  const opacity = filled ? 1 : 0.22
+  const t       = { transition: 'fill .15s, opacity .15s, stroke .15s' }
   return (
-    <svg viewBox="0 0 32 32" width={size} height={size} style={{ display: 'block', flexShrink: 0 }}>
-      {/* Bird in flight silhouette */}
-      <path
-        d="M16 10 C13 7, 7 7, 4 9 C7 9.5, 10 11, 12 13 C10 12, 6 12, 3 14 C6 14, 10 15, 12 17 C10 16.5, 7 17, 5 19 C8 18.5, 11 18, 13 19.5 C13.5 21, 14.5 22, 16 22 C17.5 22, 18.5 21, 19 19.5 C21 18, 24 18.5, 27 19 C25 17, 22 16.5, 20 17 C22 15, 26 14, 29 14 C26 12, 22 12, 20 13 C22 11, 25 9.5, 28 9 C25 7, 19 7, 16 10Z"
-        fill={filled ? color : 'none'}
-        stroke={filled ? color : 'var(--border)'}
-        strokeWidth={filled ? 0 : 1.5}
-        strokeLinejoin="round"
-        style={{ transition: 'fill .15s, stroke .15s' }}
-      />
+    <svg viewBox="0 0 48 48" width={size} height={size} style={{ display: 'block', flexShrink: 0 }}>
+      <g opacity={opacity}>
+        {/* Cola */}
+        <path d="M6,34 L2,44 L8,40 L10,46 L15,34Z" fill={c} style={t}/>
+        {/* Cuerpo */}
+        <ellipse cx="20" cy="29" rx="12" ry="8" fill={c} style={t}/>
+        {/* Plumas del ala */}
+        <path d="M10,27 C13,22 22,21 27,24" stroke={detail} strokeWidth="1.8" fill="none" strokeLinecap="round" style={t}/>
+        <path d="M10,30 C13,25 22,24 27,27" stroke={detail} strokeWidth="1.8" fill="none" strokeLinecap="round" style={t}/>
+        {/* Cabeza */}
+        <circle cx="31" cy="20" r="8" fill={c} style={t}/>
+        {/* Ojo */}
+        <circle cx="33" cy="18" r="2.2" fill="white" style={t}/>
+        <circle cx="33.6" cy="18" r="1.2" fill="#1e293b" style={t}/>
+        {/* Pico */}
+        <path d="M38,19 L46,16 L38,22Z" fill={detail} style={t}/>
+        {/* Patas */}
+        <line x1="15" y1="37" x2="13" y2="46" stroke={detail} strokeWidth="1.8" strokeLinecap="round" style={t}/>
+        <line x1="20" y1="37" x2="20" y2="46" stroke={detail} strokeWidth="1.8" strokeLinecap="round" style={t}/>
+        <line x1="10" y1="46" x2="17" y2="46" stroke={detail} strokeWidth="1.8" strokeLinecap="round" style={t}/>
+        <line x1="17" y1="46" x2="24" y2="46" stroke={detail} strokeWidth="1.8" strokeLinecap="round" style={t}/>
+      </g>
     </svg>
   )
 }
