@@ -43,6 +43,16 @@ async function ensureTables() {
       created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS media_ratings (
+      id         SERIAL PRIMARY KEY,
+      media_id   TEXT NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+      user_email TEXT NOT NULL,
+      rating     INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (media_id, user_email)
+    )
+  `
   tablesReady = true
 }
 
@@ -143,6 +153,21 @@ export async function getMediaById(id) {
     description: r.description, thumbnail: r.thumbnail,
     videoData: r.video_data, videoName: r.video_name, createdAt: r.created_at,
   }
+}
+
+export async function loadRatings(mediaId) {
+  await ensureTables()
+  const rows = await sql`SELECT user_email, rating FROM media_ratings WHERE media_id = ${mediaId}`
+  return rows
+}
+
+export async function saveRating(mediaId, userEmail, rating) {
+  await ensureTables()
+  await sql`
+    INSERT INTO media_ratings (media_id, user_email, rating)
+    VALUES (${mediaId}, ${userEmail}, ${rating})
+    ON CONFLICT (media_id, user_email) DO UPDATE SET rating = EXCLUDED.rating
+  `
 }
 
 export async function testConnection() {

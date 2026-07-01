@@ -129,7 +129,7 @@ export default function App() {
       {safePage === 'dashboard' && <Dashboard setPage={setPage} />}
       {safePage === 'editor'    && <FormEditor setPage={setPage} />}
       {safePage === 'settings'  && <Settings />}
-      {safePage === 'media'     && <Media isAdmin={user?.role === 'admin'} />}
+      {safePage === 'media'     && <Media user={user} isAdmin={user?.role === 'admin'} />}
       {safePage === 'shared'    && <SharedView id={sharedId} setPage={setPage} />}
     </Layout>
   )

@@ -1,7 +1,114 @@
 import { useState, useEffect, useRef } from 'react'
 import { upload } from '@vercel/blob/client'
-import { loadMedia, saveMedia, deleteMedia, isConfigured, getShareableLink } from '../lib/github'
+import { loadMedia, saveMedia, deleteMedia, isConfigured, getShareableLink, loadRatings, saveRating } from '../lib/github'
 import DatePicker from './DatePicker'
+
+// ── Starling (Estornino) SVG ─────────────────────────────────────────────────
+function StarlingIcon({ filled, size = 22, color = '#f59e0b' }) {
+  return (
+    <svg viewBox="0 0 32 32" width={size} height={size} style={{ display: 'block', flexShrink: 0 }}>
+      {/* Bird in flight silhouette */}
+      <path
+        d="M16 10 C13 7, 7 7, 4 9 C7 9.5, 10 11, 12 13 C10 12, 6 12, 3 14 C6 14, 10 15, 12 17 C10 16.5, 7 17, 5 19 C8 18.5, 11 18, 13 19.5 C13.5 21, 14.5 22, 16 22 C17.5 22, 18.5 21, 19 19.5 C21 18, 24 18.5, 27 19 C25 17, 22 16.5, 20 17 C22 15, 26 14, 29 14 C26 12, 22 12, 20 13 C22 11, 25 9.5, 28 9 C25 7, 19 7, 16 10Z"
+        fill={filled ? color : 'none'}
+        stroke={filled ? color : 'var(--border)'}
+        strokeWidth={filled ? 0 : 1.5}
+        strokeLinejoin="round"
+        style={{ transition: 'fill .15s, stroke .15s' }}
+      />
+    </svg>
+  )
+}
+
+// ── Starling Rating ──────────────────────────────────────────────────────────
+function StarlingRating({ mediaId, userEmail, compact = false }) {
+  const [ratings, setRatings]   = useState([])
+  const [userRating, setUserRating] = useState(0)
+  const [hover, setHover]       = useState(0)
+  const [saving, setSaving]     = useState(false)
+
+  useEffect(() => {
+    loadRatings(mediaId).then(rows => {
+      setRatings(rows)
+      const mine = rows.find(r => r.user_email === userEmail)
+      if (mine) setUserRating(mine.rating)
+    }).catch(() => {})
+  }, [mediaId, userEmail])
+
+  const avg = ratings.length
+    ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1)
+    : null
+
+  async function handleRate(value) {
+    if (saving) return
+    setSaving(true)
+    try {
+      await saveRating(mediaId, userEmail, value)
+      setUserRating(value)
+      setRatings(prev => {
+        const without = prev.filter(r => r.user_email !== userEmail)
+        return [...without, { user_email: userEmail, rating: value }]
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (compact) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+        {[1,2,3,4,5].map(i => (
+          <StarlingIcon key={i} filled={i <= (userRating || 0)} size={16} />
+        ))}
+        {avg && (
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2 }}>
+            {avg} · {ratings.length} {ratings.length === 1 ? 'voto' : 'votos'}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const display = hover || userRating
+
+  return (
+    <div style={{ padding: '20px 24px', borderTop: '1px solid var(--border)' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+        Valorar este GIRO
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {[1,2,3,4,5].map(i => (
+          <button
+            key={i}
+            onClick={() => handleRate(i)}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(0)}
+            disabled={saving}
+            style={{ background: 'none', border: 'none', cursor: saving ? 'default' : 'pointer', padding: 2, borderRadius: 4, transition: 'transform .1s', transform: hover === i ? 'scale(1.25)' : 'scale(1)' }}
+            title={`${i} estornino${i > 1 ? 's' : ''}`}
+          >
+            <StarlingIcon filled={i <= display} size={28} />
+          </button>
+        ))}
+        <div style={{ marginLeft: 10 }}>
+          {avg ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-heading)' }}>{avg}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{ratings.length} {ratings.length === 1 ? 'valoración' : 'valoraciones'}</span>
+            </div>
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sin valoraciones aún</span>
+          )}
+        </div>
+      </div>
+      {userRating > 0 && (
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
+          Tu valoración: {userRating} {userRating === 1 ? 'estornino' : 'estorninos'} {saving && '· Guardando...'}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
@@ -320,7 +427,7 @@ function UploadModal({ onSave, onClose }) {
 }
 
 // ── Player Modal ─────────────────────────────────────────────────────────────
-function PlayerModal({ item, onClose, onDelete, isAdmin }) {
+function PlayerModal({ item, onClose, onDelete, isAdmin, userEmail }) {
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied]     = useState(false)
 
@@ -401,6 +508,7 @@ function PlayerModal({ item, onClose, onDelete, isAdmin }) {
               {item.description}
             </p>
           )}
+          {userEmail && <StarlingRating mediaId={item.id} userEmail={userEmail} />}
         </div>
 
         <div className="modal-footer">
@@ -424,7 +532,7 @@ function PlayerModal({ item, onClose, onDelete, isAdmin }) {
 }
 
 // ── Media Card ───────────────────────────────────────────────────────────────
-function MediaCard({ item, onClick }) {
+function MediaCard({ item, onClick, userEmail }) {
   const [copied, setCopied] = useState(false)
 
   function handleCopy(e) {
@@ -505,13 +613,18 @@ function MediaCard({ item, onClick }) {
             {item.description}
           </div>
         )}
+        {userEmail && (
+          <div onClick={e => e.stopPropagation()}>
+            <StarlingRating mediaId={item.id} userEmail={userEmail} compact />
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function Media({ isAdmin = false }) {
+export default function Media({ isAdmin = false, user = null }) {
   const [items, setItems]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
@@ -591,7 +704,7 @@ export default function Media({ isAdmin = false }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {items.map(item => (
-              <MediaCard key={item.id} item={item} onClick={() => setSelected(item)} />
+              <MediaCard key={item.id} item={item} onClick={() => setSelected(item)} userEmail={user?.email} />
             ))}
           </div>
         )}
@@ -610,6 +723,7 @@ export default function Media({ isAdmin = false }) {
           onClose={() => setSelected(null)}
           onDelete={handleDelete}
           isAdmin={isAdmin}
+          userEmail={user?.email}
         />
       )}
     </>
